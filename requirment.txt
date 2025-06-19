@@ -1,0 +1,10 @@
+sounddevice
+pyautogui
+pyperclip
+pyttsx3
+psutil
+shutilwhich 
+vosk
+requests
+feedparser
+speedtest-cli

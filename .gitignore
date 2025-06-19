@@ -1,0 +1,39 @@
+# 🔥 Python bytecode
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+
+# 🔥 Virtualenv (like node_modules for Python)
+venv/
+env/
+ENV/
+.venv/
+
+# 🔥 System & Editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 🔥 Logs & crash reports
+*.log
+*.pid
+*.dump
+
+# 🔥 Model & audio data (you can tweak this)
+model/
+*.wav
+*.mp3
+
+# 🔥 Misc
+*.bak
+*.swp
+*.tmp
+*.old
+
+# Optional:
+# Comment out model/ above if you want to push your Vosk model to the repo (but not recommended)
+
+model-big
+model-small
