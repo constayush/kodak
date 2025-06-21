@@ -264,8 +264,73 @@ command_map = {
         "action": lambda text: schedule_shutdown(text),
         "response": None
     },
+      "restart explorer": {
+        "action": lambda: speak(restart_explorer()),
+        "response": None
+    },
+    "running processes": {
+        "action": lambda: speak(show_running_processes()),
+        "response": None
+    },
+    
+    # Control Panel
+    "open power settings": {
+        "action": lambda: speak(open_control_panel('power')),
+        "response": None
+    },
+    
+    # Network
+    "show network info": {
+        "action": lambda: speak(get_network_info()),
+        "response": None
+    },
+    "show wifi passwords": {
+        "action": lambda: speak(show_wifi_passwords()),
+        "response": None
+    },
 }
 
+def restart_explorer():
+    os.system("taskkill /f /im explorer.exe & start explorer.exe")
+    return "Windows Explorer restarted"
+
+def show_running_processes():
+    processes = []
+    for proc in psutil.process_iter(['name']):
+        processes.append(proc.info['name'])
+    return f"Running processes: {', '.join(set(processes))[:100]}..."  # Truncate long output
+
+def get_network_info():
+    result = subprocess.run(['ipconfig', '/all'], capture_output=True, text=True)
+    return "Network information displayed in console"  # Or parse specific info
+
+def show_wifi_passwords():
+    if not is_admin():
+        return "Admin rights required to view WiFi passwords"
+    
+    output = subprocess.check_output(
+        'netsh wlan show profile name=* key=clear', 
+        shell=True, 
+        text=True
+    )
+    # Extract passwords (simplified example)
+    passwords = re.findall(r"Key Content\s*:\s*(.*)", output)
+    return f"Found {len(passwords)} saved WiFi networks"
+
+def open_control_panel(applet):
+    """Open specific Control Panel applets"""
+    applets = {
+        'programs': 'appwiz.cpl',
+        'network': 'ncpa.cpl',
+        'power': 'powercfg.cpl',
+        'sound': 'mmsys.cpl',
+        'users': 'netplwiz',
+        'region': 'intl.cpl'
+    }
+    if applet in applets:
+        os.system(f"control {applets[applet]}")
+        return f"Opened {applet} settings"
+    return "Applet not found"
 
 def schedule_shutdown(text):
     try:
@@ -275,13 +340,11 @@ def schedule_shutdown(text):
     except:
         speak("Invalid time format. Example: 'schedule shutdown 30'")
 
-
 def clean_junk():
     if is_admin():
         os.system("cleanmgr /sagerun:1")
     else:
         speak("Please run as administrator to clean junk files.")
-
 
 def load_app_config():
     try:
@@ -289,7 +352,6 @@ def load_app_config():
             return json.load(f).get("apps", {})
     except:
         return {}
-
 
 def open_app(text):
     """Open an application dynamically from config.json with error handling."""
@@ -329,13 +391,16 @@ def open_app(text):
         speak(f"Failed to open app: {str(e)}")
         print(f"🔥 open_app() error: {e}")
 
-
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
-
+def run_as_admin(command):
+    if is_admin():
+        os.system(command)
+        return f"Executed: {command}"
+    return "Admin rights required"
 
 def run_speedtest():
     lazy_imports()
@@ -347,7 +412,6 @@ def run_speedtest():
     except Exception as e:
         speak(f"Speed test failed: {str(e)}")
 
-
 def kill_process(text):
     proc = text.split("kill")[-1].strip()
     try:
@@ -356,12 +420,10 @@ def kill_process(text):
     except Exception as e:
         speak(f"Failed to kill {proc}: {str(e)}")
 
-
 def system_info():
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
     speak(f"CPU: {cpu}%, RAM: {ram}%")
-
 
 def save_screenshot():
     try:
@@ -373,7 +435,6 @@ def save_screenshot():
         speak(f"Screenshot saved at {path}")
     except Exception as e:
         speak(f"Failed to save screenshot: {str(e)}")
-
 
 def run_command(text):
     lazy_imports()
@@ -411,7 +472,6 @@ def run_command(text):
     except Exception as e:
         speak(f"Command failed: {str(e)}")
 
-
 def fetch_definition(word):
     lazy_imports()
     try:
@@ -422,7 +482,6 @@ def fetch_definition(word):
     except Exception as e:
         return f"Failed to fetch definition: {str(e)}"
 
-
 def fetch_jokes():
     lazy_imports()
     try:
@@ -430,7 +489,6 @@ def fetch_jokes():
         return [j['setup'] + " ... " + j['punchline'] for j in r.json()] if r.ok else ["No joke found."]
     except Exception as e:
         return [f"Joke fetch failed: {str(e)}"]
-
 
 def read_news():
     lazy_imports()
@@ -447,9 +505,7 @@ def read_news():
     except Exception as e:
         speak(f"Failed to fetch news: {str(e)}")
 
-
 MEMORY_FILE = "memory.json"
-
 
 def load_memory():
     if not os.path.exists(MEMORY_FILE): 
@@ -461,7 +517,6 @@ def load_memory():
         speak(f"Memory load failed: {str(e)}")
         return []
 
-
 def save_memory(mem_list):
     try:
         with open(MEMORY_FILE, "w", encoding="utf-8") as f:
@@ -469,13 +524,11 @@ def save_memory(mem_list):
     except Exception as e:
         speak(f"Memory save failed: {str(e)}")
 
-
 def remember(text, lang):
     mem = load_memory()
     mem.append({"timestamp": str(datetime.datetime.now()), "note": text})
     save_memory(mem)
     speak("Remembered.", lang)
-
 
 def recall_memory(lang):
     mem = load_memory()
@@ -486,7 +539,6 @@ def recall_memory(lang):
         for item in mem[-5:]: 
             speak(item['note'], lang)
 
-
 def clear_command_queue():
     while not q.empty():
         try: 
@@ -494,12 +546,10 @@ def clear_command_queue():
         except queue.Empty: 
             break
 
-
 def shutdown_kodak():
     speak("Shutting down. Goodbye 👋", "en")
     sd.stop()  # Release audio resources
     sys.exit()
-
 
 def listen():
     global stop_speaking
@@ -548,7 +598,6 @@ def listen():
     except Exception as e:
         speak(f"Audio error: {str(e)}", "en")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     listen()
